@@ -15,7 +15,7 @@ const pool = new Pool({
 });
 
 const corsOptions = {
-  origin: ['https://luxearn.site', 'https://luxearnref.onrender.com', 'http://luxearn.site', 'http://www.luxearn.site'],
+  origin: ['https://luxearn.site', 'https://www.luxearn.site', 'http://luxearn.site', 'http://www.luxearn.site', 'https://luxearnref.onrender.com', 'http://localhost:5500', 'http://127.0.0.1:5500'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -140,7 +140,7 @@ app.get('/api/referral', async (req, res) => {
       user = await createUser(email);
     }
 
-    const referralLink = `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`;
+    const referralLink = `https://luxearn.site/#/index?ref=${user.referral_code}`;
     
     res.json({
       success: true,
@@ -173,7 +173,7 @@ app.post('/api/register', async (req, res) => {
           id: user.id,
           email: user.email,
           referralCode: user.referral_code,
-          referralLink: `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`,
+          referralLink: `https://luxearn.site/#/index?ref=${user.referral_code}`,
           isNew: false
         }
       });
@@ -195,7 +195,7 @@ app.post('/api/register', async (req, res) => {
         id: user.id,
         email: user.email,
         referralCode: user.referral_code,
-        referralLink: `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`,
+        referralLink: `https://luxearn.site/#/index?ref=${user.referral_code}`,
         isNew: true
       }
     });
@@ -253,6 +253,13 @@ app.get('/api/team', async (req, res) => {
   }
 });
 
+function parseMoney(value) {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  const cleaned = String(value).replace(/[$,]/g, '');
+  return parseFloat(cleaned) || 0;
+}
+
 app.get('/api/balance', async (req, res) => {
   try {
     const { email } = req.query;
@@ -268,17 +275,17 @@ app.get('/api/balance', async (req, res) => {
     }
 
     const pendingResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'pending'`,
+      `SELECT COALESCE(SUM(amount::numeric), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'pending'`,
       [user.id]
     );
 
     const claimedResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'claimed'`,
+      `SELECT COALESCE(SUM(amount::numeric), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'claimed'`,
       [user.id]
     );
 
     const earningsBreakdown = await pool.query(
-      `SELECT level, COALESCE(SUM(amount), 0) as total 
+      `SELECT level, COALESCE(SUM(amount::numeric), 0) as total 
        FROM referral_earnings 
        WHERE referrer_id = $1 
        GROUP BY level 
@@ -291,7 +298,7 @@ app.get('/api/balance', async (req, res) => {
       data: {
         pendingBalance: parseFloat(pendingResult.rows[0].total) || 0,
         claimedBalance: parseFloat(claimedResult.rows[0].total) || 0,
-        totalBalance: parseFloat(user.balance) || 0,
+        totalBalance: parseMoney(user.balance),
         breakdown: {
           level1: parseFloat(earningsBreakdown.rows.find(r => r.level === 1)?.total) || 0,
           level2: parseFloat(earningsBreakdown.rows.find(r => r.level === 2)?.total) || 0,
@@ -320,7 +327,7 @@ app.post('/api/claim', async (req, res) => {
     }
 
     const pendingResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'pending'`,
+      `SELECT COALESCE(SUM(amount::numeric), 0) as total FROM referral_earnings WHERE referrer_id = $1 AND status = 'pending'`,
       [user.id]
     );
 
@@ -346,7 +353,7 @@ app.post('/api/claim', async (req, res) => {
       success: true,
       data: {
         claimedAmount: pendingAmount,
-        newBalance: parseFloat(updatedUser.balance) || 0,
+        newBalance: parseMoney(updatedUser.balance),
         message: `Successfully claimed ${pendingAmount} USDT`
       }
     });
@@ -420,7 +427,7 @@ app.get('/api/earnings-history', async (req, res) => {
     const history = earnings.rows.map(e => ({
       level: e.level,
       percentage: e.percentage,
-      amount: parseFloat(e.amount),
+      amount: parseMoney(e.amount),
       status: e.status,
       referredEmail: e.referred_email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
       createdAt: e.created_at,
