@@ -15,7 +15,7 @@ const pool = new Pool({
 });
 
 const corsOptions = {
-  origin: ['https://luxearn.site', 'https://www.luxearn.site', 'http://luxearn.site', 'http://www.luxearn.site'],
+  origin: ['https://luxearn.site', 'https://luxearnref.onrender.com', 'http://luxearn.site', 'http://www.luxearn.site'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -140,7 +140,7 @@ app.get('/api/referral', async (req, res) => {
       user = await createUser(email);
     }
 
-    const referralLink = `https://luxearn.site/#/index?ref=${user.referral_code}`;
+    const referralLink = `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`;
     
     res.json({
       success: true,
@@ -173,7 +173,7 @@ app.post('/api/register', async (req, res) => {
           id: user.id,
           email: user.email,
           referralCode: user.referral_code,
-          referralLink: `https://luxearn.site/#/index?ref=${user.referral_code}`,
+          referralLink: `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`,
           isNew: false
         }
       });
@@ -195,7 +195,7 @@ app.post('/api/register', async (req, res) => {
         id: user.id,
         email: user.email,
         referralCode: user.referral_code,
-        referralLink: `https://luxearn.site/#/index?ref=${user.referral_code}`,
+        referralLink: `https://luxearnref.onrender.com/#/index?ref=${user.referral_code}`,
         isNew: true
       }
     });
