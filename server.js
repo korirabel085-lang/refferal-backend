@@ -205,6 +205,36 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+app.get('/api/inviter', async (req, res) => {
+  try {
+    const { referralCode } = req.query;
+    
+    if (!referralCode) {
+      return res.status(400).json({ success: false, error: 'Referral code is required' });
+    }
+
+    const inviter = await findUserByReferralCode(referralCode);
+    
+    if (!inviter) {
+      return res.status(404).json({ success: false, error: 'Inviter not found' });
+    }
+
+    const maskedEmail = inviter.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+
+    res.json({
+      success: true,
+      data: {
+        maskedEmail: maskedEmail,
+        referralCode: inviter.referral_code,
+        joinedAt: inviter.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Error getting inviter:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 app.get('/api/team', async (req, res) => {
   try {
     const { email } = req.query;
